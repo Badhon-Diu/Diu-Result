@@ -1,7 +1,7 @@
-import axios from "axios";
 import { useState } from "react";
 import "./App.css";
 import Result from "./Result";
+
 function App() {
   const [formData, setFormData] = useState({
     studentId: "",
@@ -9,9 +9,9 @@ function App() {
   });
 
   const [alldata, setalldata] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
-  const [cgpa, setCgpa] = useState(0);
+  const [error, setError] = useState("");
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({
@@ -22,37 +22,64 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-
+    
     try {
       const { studentId, semester } = formData;
-      const url = `http://software.diu.edu.bd:8006/result?grecaptcha=&semesterId=${semester}&studentId=${studentId}`;
-
-      const response = await axios.get(url);
-
-      //console.log("API Response:", response.data);
-      setalldata(response.data);
-      //let cgpaValue = response.data.cgpa;
-     
-      //setCgpa(cgpaValue)
-      //console.log(cgpaValue)
-      //console.log("here si your data", cgpaValue);
-      // You can show response to user here if you want
+      
+      if (!studentId || !semester) {
+        setError("Please enter both Student ID and select a semester");
+        return;
+      }
+      
+      // Create the direct URL to the DIU result system
+      const resultUrl = `http://software.diu.edu.bd:8006/result?grecaptcha=&semesterId=${semester}&studentId=${studentId}`;
+      
+      // For deployed environments, show instructions
+      if (window.location.protocol === 'https:') {
+        setError(
+          "Due to security restrictions, we cannot fetch results directly. " +
+          "Click the button below to open the DIU result page in a new tab."
+        );
+        
+        // Create a button that will open the direct link in a new tab
+        const openButton = document.createElement('button');
+        openButton.textContent = 'View Results';
+        openButton.className = 'mt-4 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none transition-colors';
+        openButton.onclick = () => window.open(resultUrl, '_blank');
+        
+        // Find the error message div and append the button after it
+        const errorDiv = document.querySelector('[data-error-message]');
+        if (errorDiv) {
+          errorDiv.appendChild(openButton);
+        }
+        
+        return;
+      }
+      
+      // The code below will only run in local development (HTTP) environment
+      setLoading(true);
+      setError("");
+      
+      // Direct API call for local development
+      const response = await fetch(resultUrl);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setalldata(data);
+      } else {
+        setError("No results found. Please check your Student ID and Semester.");
+      }
     } catch (error) {
-      console.error(
-        "API Error:",
-        error.response ? error.response.data : error.message
-      );
+      console.error("Error:", error);
+      setError("Failed to fetch results. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  console.log(alldata)
-
   return (
     <div>
-      <div className="mb-3 backdrop-blur-3xl  z-10  flex items-center justify-center">
+      <div className="mb-3 backdrop-blur-3xl z-10 flex items-center justify-center">
         <form
           onSubmit={handleSubmit}
           className="max-w-md w-full mx-auto p-6 bg-gray-900/20 rounded-xl shadow-xl glass-container"
@@ -95,8 +122,9 @@ function App() {
               className="w-full px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-200"
               onChange={handleChange}
               required
+              defaultValue=""
             >
-              <option value="" disabled selected className="bg-gray-800">
+              <option value="" disabled>
                 Select a semester
               </option>
               <option value="231" className="bg-gray-800">
@@ -134,13 +162,20 @@ function App() {
             <button
               type="submit"
               className="w-full px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-colors"
+              disabled={loading}
             >
-              Submit
+              {loading ? "Loading..." : "Submit"}
             </button>
           </div>
+          
+          {error && (
+            <div data-error-message className="mt-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md text-center">
+              {error}
+            </div>
+          )}
         </form>
       </div>
-      {alldata.length >0 && <Result cgpa={cgpa} alldata={alldata}></Result>}
+      {alldata.length > 0 && <Result cgpa={0} alldata={alldata} />}
     </div>
   );
 }
