@@ -11,7 +11,7 @@ function App() {
   const [alldata, setalldata] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({
@@ -22,52 +22,55 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const { studentId, semester } = formData;
-      
+
       if (!studentId || !semester) {
         setError("Please enter both Student ID and select a semester");
         return;
       }
-      
-      // Create the direct URL to the DIU result system
-      const resultUrl = `http://software.diu.edu.bd:8006/result?grecaptcha=&semesterId=${semester}&studentId=${studentId}`;
-      
+
+      // Create the direct URL to the DIU result systemnpm run dev
+      const resultUrl = `http://peoplepulse.diu.edu.bd:8189/result?grecaptcha=&semesterId=${semester}&studentId=${studentId}`;
+
       // For deployed environments, show instructions
-      if (window.location.protocol === 'https:') {
+      if (window.location.protocol === "https:") {
         setError(
           "Due to security restrictions, we cannot fetch results directly. " +
-          "Click the button below to open the DIU result page in a new tab."
+            "Click the button below to open the DIU result page in a new tab."
         );
-        
+
         // Create a button that will open the direct link in a new tab
-        const openButton = document.createElement('button');
-        openButton.textContent = 'View Results';
-        openButton.className = 'mt-4 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none transition-colors';
-        openButton.onclick = () => window.open(resultUrl, '_blank');
-        
+        const openButton = document.createElement("button");
+        openButton.textContent = "View Results";
+        openButton.className =
+          "mt-4 px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 focus:outline-none transition-colors";
+        openButton.onclick = () => window.open(resultUrl, "_blank");
+
         // Find the error message div and append the button after it
-        const errorDiv = document.querySelector('[data-error-message]');
+        const errorDiv = document.querySelector("[data-error-message]");
         if (errorDiv) {
           errorDiv.appendChild(openButton);
         }
-        
+
         return;
       }
-      
+
       // The code below will only run in local development (HTTP) environment
       setLoading(true);
       setError("");
-      
+
       // Direct API call for local development
       const response = await fetch(resultUrl);
       const data = await response.json();
-      
+
       if (data && data.length > 0) {
         setalldata(data);
       } else {
-        setError("No results found. Please check your Student ID and Semester.");
+        setError(
+          "No results found. Please check your Student ID and Semester."
+        );
       }
     } catch (error) {
       console.error("Error:", error);
@@ -167,9 +170,12 @@ function App() {
               {loading ? "Loading..." : "Submit"}
             </button>
           </div>
-          
+
           {error && (
-            <div data-error-message className="mt-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md text-center">
+            <div
+              data-error-message
+              className="mt-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md text-center"
+            >
               {error}
             </div>
           )}
